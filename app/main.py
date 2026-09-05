@@ -24,10 +24,12 @@ def on_startup():
     init_db()
     from app.db import SessionLocal
     from app.models import Student
+    from app.access_control import init_default_config
     db = SessionLocal()
     if db.query(Student).count() == 0:
         from seed import seed
         seed()
+    init_default_config(db)
     db.close()
 
 

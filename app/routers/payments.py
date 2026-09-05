@@ -19,16 +19,6 @@ from app.models_payment import PaymentAudit
 router = APIRouter(prefix="/api/payments", tags=["Payments"])
 
 
-@router.on_event("startup")
-def startup():
-    from app.db import SessionLocal
-    db = SessionLocal()
-    try:
-        init_default_config(db)
-    finally:
-        db.close()
-
-
 @router.get("/config")
 def get_payment_config(db: Session = Depends(get_db)):
     fee = get_consultation_fee(db)
