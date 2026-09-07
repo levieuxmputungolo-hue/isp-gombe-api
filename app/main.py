@@ -52,18 +52,13 @@ def on_startup():
         if not User.objects.filter(username='admin').exists():
             User.objects.create_superuser('admin', 'admin@isp-gombe.cd', 'isp-gombe-2025')
             print('[Django] Superuser created: admin / isp-gombe-2025')
+        from django.core.wsgi import get_wsgi_application
+        from a2wsgi import WSGIMiddleware
+        django_app = get_wsgi_application()
+        app.mount("/django-admin", WSGIMiddleware(django_app))
+        print("[Django] Admin panel mounted at /django-admin")
     except Exception as e:
         print(f"[Django] Setup error: {e}")
-
-
-try:
-    from django.core.wsgi import get_wsgi_application
-    from a2wsgi import WSGIMiddleware
-    django_app = get_wsgi_application()
-    app.mount("/django-admin", WSGIMiddleware(django_app))
-    print("[Django] Admin panel mounted at /django-admin")
-except Exception as e:
-    print(f"[Django] Mount failed: {e}")
 
 
 @app.get("/ping")
