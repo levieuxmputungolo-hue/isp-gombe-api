@@ -2,9 +2,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db
-from app.routers import results
+from app.routers import results, admin
 
-app = FastAPI(title="ISP-GOMBE API", version="3.0.0")
+app = FastAPI(title="ISP-GOMBE API", version="3.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(results.router)
+app.include_router(admin.router)
 
 
 @app.on_event("startup")
@@ -41,4 +42,4 @@ def on_startup():
 
 @app.get("/ping")
 def ping():
-    return {"ok": True, "version": "3.0.0"}
+    return {"ok": True, "version": "3.1.0"}
