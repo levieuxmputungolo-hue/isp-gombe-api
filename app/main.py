@@ -1,10 +1,14 @@
 import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.db import init_db
-from app.routers import results, admin
+from a2wsgi import WSGIMiddleware
 
-app = FastAPI(title="ISP-GOMBE API", version="3.1.0")
+DJANGO_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'django_admin')
+sys.path.insert(0, DJANGO_DIR)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'isp_gombe.settings')
+
+app = FastAPI(title="ISP-GOMBE API", version="3.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,13 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import results, admin
 app.include_router(results.router)
 app.include_router(admin.router)
 
 
 @app.on_event("startup")
 def on_startup():
-    from app.db import engine, SessionLocal
+    from app.db import engine
     from sqlalchemy import text
     try:
         with engine.connect() as conn:
@@ -35,11 +40,29 @@ def on_startup():
             conn.commit()
     except Exception:
         pass
+    from app.db import init_db
     init_db()
     from seed import seed
     seed()
 
+    import django
+    django.setup()
+    from django.core.management import call_command
+    call_command('migrate', '--run-syncdb', verbosity=0)
+    from django.contrib.auth.models import User
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@isp-gombe.cd', 'isp-gombe-2025')
+        print('[Django] Superuser created: admin / isp-gombe-2025')
+
+
+try:
+    from django.core.wsgi import get_wsgi_application
+    django_app = get_wsgi_application()
+    app.mount("/django-admin", WSGIMiddleware(django_app))
+except Exception as e:
+    print(f"[Django] Mount failed: {e}")
+
 
 @app.get("/ping")
 def ping():
-    return {"ok": True, "version": "3.1.0"}
+    return {"ok": True, "version": "3.2.0"}

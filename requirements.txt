@@ -4,3 +4,5 @@ sqlalchemy
 pydantic
 openpyxl
 python-multipart
+django
+a2wsgi
