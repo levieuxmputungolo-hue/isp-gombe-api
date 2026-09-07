@@ -3,9 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db
 from app.routers import results
-from app.routers import payments
 
-app = FastAPI(title="ISP-GOMBE API", version="2.0.0")
+app = FastAPI(title="ISP-GOMBE API", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,23 +15,30 @@ app.add_middleware(
 )
 
 app.include_router(results.router)
-app.include_router(payments.router)
 
 
 @app.on_event("startup")
 def on_startup():
+    from app.db import engine, SessionLocal
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS results CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS students CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS universities CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS semester_reports CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS payments CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS result_access CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS payment_audit CASCADE"))
+            conn.execute(text("DROP TABLE IF EXISTS payment_config CASCADE"))
+            conn.commit()
+    except Exception:
+        pass
     init_db()
-    from app.db import SessionLocal
-    from app.models import Student
-    from app.access_control import init_default_config
-    db = SessionLocal()
-    if db.query(Student).count() == 0:
-        from seed import seed
-        seed()
-    init_default_config(db)
-    db.close()
+    from seed import seed
+    seed()
 
 
 @app.get("/ping")
 def ping():
-    return {"ok": True}
+    return {"ok": True, "version": "3.0.0"}
